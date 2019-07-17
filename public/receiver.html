@@ -21,9 +21,11 @@ pc.onicecandidate = function(candidate) {
 // once remote track media arrives, show it in remote video element
 pc.ontrack = (event) => {
   console.log("Receiving track!");
+
+  the_video = document.getElementById("the_video");   
   // don't set srcObject again if it is already set.
-  if (remoteView.srcObject) return;
-  //remoteView.srcObject = event.streams[0]; // The other guys stream
+  the_video.srcObject = event.streams[0]; // The other guys stream
+  console.log("Number possible streams: %s", event.streams.length);
 };
 
 signaling.onmessage = async (event) => {
@@ -63,4 +65,5 @@ signaling.onmessage = async (event) => {
 
 
 <h1>RECEIVER</h1>
+<video id="the_video">The Video</video>
 

@@ -43,14 +43,15 @@ pc.ontrack = (event) => {
 };
 
 // call start() to initiate
-async function start() {
+function start() {
   try {
     // get local stream, show it in self-view and add it to be sent
     const stream =
       //await navigator.mediaDevices.getUserMedia(constraints);
       navigator.mediaDevices.getUserMedia({video: {mediaSource: 'screen'}});
-    stream.getTracks().forEach((track) =>
-      pc.addTrack(track, stream));
+
+    //stream.getTracks().forEach((track) =>
+      //pc.addTrack(track, stream));
     //selfView.srcObject = stream; // Our stream
   } catch (err) {
     console.error(err);
@@ -87,8 +88,30 @@ signaling.onmessage = async (event) => {
   }
 };
 
-window.onload = function() {
-   start();
+function _startScreenCapture() {
+    if (navigator.getDisplayMedia) {
+      return navigator.getDisplayMedia({video: true});
+    } else if (navigator.mediaDevices.getDisplayMedia) {
+      return navigator.mediaDevices.getDisplayMedia({video: true});
+    } else {
+      return navigator.mediaDevices.getUserMedia({video: {mediaSource: 'screen'}});
+    }
+}
+
+window.onload = async function() {
+  try {
+    // get local stream, show it in self-view and add it to be sent
+    const stream =
+      //await navigator.mediaDevices.getUserMedia(constraints);
+      await _startScreenCapture();
+
+    stream.getTracks().forEach((track) =>
+      pc.addTrack(track, stream));
+    the_alert = document.getElementById("is_streaming");
+    the_alert.innerHTML = "STREAMING!!";
+  } catch (err) {
+    console.error(err);
+  }
 } 
 
 </script>
@@ -96,4 +119,4 @@ window.onload = function() {
 
 
 <h1>SENDER</h1>
-
+<h3 id="is_streaming"></h3>
