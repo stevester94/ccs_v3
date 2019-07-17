@@ -26,15 +26,13 @@ pc.ontrack = (event) => {
   //remoteView.srcObject = event.streams[0]; // The other guys stream
 };
 
-signaling.onmessage = async (payload_str) => {
+signaling.onmessage = async (event) => {
+  console.log("Message received: %s", event.data);
 
-    payload = JSON.parse(payload_str);
-    desc = payload.desc;
-    candidate = payload.candidate;
+  payload = JSON.parse(event.data);
+  desc = payload.desc;
+  candidate = payload.candidate;
 
-  console.log("Message received");
-  console.log(desc);
-  console.log(candidate);
 
   try {
     if (desc) {

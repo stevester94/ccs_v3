@@ -1,9 +1,10 @@
 <script>
 // handles JSON.stringify/parse
 
-const REQUEST_VIDEO = false;
+const REQUEST_VIDEO = true;
+const REQUEST_AUDIO = false;
 signaling = new WebSocket('ws://localhost:8081');
-const constraints = {audio: true, video: REQUEST_VIDEO}; // We don't have video, but we have a mic...
+const constraints = {audio: REQUEST_AUDIO, video: REQUEST_VIDEO}; // We don't have video, but we have a mic...
 const configuration = {iceServers: [{urls: 'stun:stun.l.google.com:19302'}]};
 const pc = new RTCPeerConnection(configuration);
 
@@ -46,7 +47,8 @@ async function start() {
   try {
     // get local stream, show it in self-view and add it to be sent
     const stream =
-      await navigator.mediaDevices.getUserMedia(constraints);
+      //await navigator.mediaDevices.getUserMedia(constraints);
+      navigator.mediaDevices.getUserMedia({video: {mediaSource: 'screen'}});
     stream.getTracks().forEach((track) =>
       pc.addTrack(track, stream));
     //selfView.srcObject = stream; // Our stream
@@ -55,14 +57,12 @@ async function start() {
   }
 }
 
-signaling.onmessage = async (payload_str) => {
-  payload = JSON.parse(payload_str);
+signaling.onmessage = async (event) => {
+  payload = JSON.parse(event.data);
   desc = payload.desc;
   candidate = payload.candidate;
 
   console.log("Message received");
-  console.log(desc);
-  console.log(candidate);
   try {
     if (desc) {
       // if we get an offer, we need to reply with an answer
