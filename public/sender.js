@@ -1,9 +1,34 @@
+// I don't think these are actually being used
 const REQUEST_VIDEO = true;
 const REQUEST_AUDIO = false;
-signaling = new WebSocket('ws://localhost:8081');
+//signaling = new WebSocket('ws://localhost:8081');
+signaling = new WebSocket('ws://192.168.1.178:8081');
 const constraints = {audio: REQUEST_AUDIO, video: REQUEST_VIDEO}; // We don't have video, but we have a mic...
 const configuration = {iceServers: [{urls: 'stun:stun.l.google.com:19302'}]};
 const pc = new RTCPeerConnection(configuration);
+
+// This hot garbage is just for sanity checking
+sendChannel = pc.createDataChannel("sendChannel");
+sendChannel.onopen = handleSendChannelStatusChange;
+sendChannel.onclose = handleSendChannelStatusChange;
+function handleSendChannelStatusChange(e)
+{
+  console.log("handleSendChannelStatusChange called");
+  if(sendChannel)
+  {
+    var state = sendChannel.readyState;
+    if(state === "open")
+    {
+      console.log("Sending sanity check");
+      sendChannel.send("SANITY CHECK!");
+    }
+    else
+    {
+      console.log("Data channel is not open");
+    }
+  }
+}
+// END hot garbage
 
 signaling.sendBlob = function(payload) {
     this.send(JSON.stringify(payload));
@@ -45,22 +70,6 @@ pc.ontrack = (event) => {
   if (remoteView.srcObject) return;
   //remoteView.srcObject = event.streams[0]; // The other guys stream
 };
-
-// call start() to initiate
-function start() {
-  try {
-    // get local stream, show it in self-view and add it to be sent
-    const stream =
-      //await navigator.mediaDevices.getUserMedia(constraints);
-      navigator.mediaDevices.getUserMedia({video: {mediaSource: 'screen'}});
-
-    //stream.getTracks().forEach((track) =>
-      //pc.addTrack(track, stream));
-    //selfView.srcObject = stream; // Our stream
-  } catch (err) {
-    console.error(err);
-  }
-}
 
 signaling.onmessage = async (event) => {
   payload = JSON.parse(event.data);
@@ -113,6 +122,10 @@ window.onload = async function() {
       pc.addTrack(track, stream));
     the_alert = document.getElementById("is_streaming");
     the_alert.innerHTML = "STREAMING!!";
+
+    self_view = document.getElementById("self_view");
+    self_view.srcObject = stream; // Our stream
+
   } catch (err) {
     console.error(err);
   }

@@ -6,6 +6,25 @@ const constraints = {audio: true, video: REQUEST_VIDEO}; // We don't have video,
 const configuration = {iceServers: [{urls: 'stun:stun.l.google.com:19302'}]};
 const pc = new RTCPeerConnection(configuration);
 
+// This hot garbage is just for sanity checking
+pc.ondatachannel = receiveChannelCallback; 
+var receiveChannel = null;
+
+function receiveChannelCallback(event) {
+  console.log("RECEIVED A FUCKING CHANNEL");
+  receiveChannel = event.channel;
+  receiveChannel.onmessage = handleReceiveMessage;
+}
+
+function handleReceiveMessage(e)
+{
+  console.log("MESSAGE RECEIVED");
+  console.log("Received the following: " + e.data);
+}
+
+// END hot garbage
+
+
 signaling.sendBlob = function(payload) {
     this.send(JSON.stringify(payload));
 }
