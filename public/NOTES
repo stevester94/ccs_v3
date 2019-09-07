@@ -1,3 +1,13 @@
+** Simple data transmission retrospective **
+- The problem was in the exchanging of ice candidates
+  - Problem was several issues:
+    - The candidate was not being properly labeled in a JSON object
+      - It was expected to be in a "candidate" field
+    - The EVENT of a new ice candidate was being transmitted
+      - It should be just the candidate (just get the candidate from the event)
+      - The event refused to be properly stringified, so keep that in mind
+
+** Steps in the RTC handshake **
 *receiver*
 - onicecandidate
   - send candidate to other guy
