@@ -33,50 +33,66 @@
     disconnectButton.addEventListener('click', disconnectPeers, false);
 
     receiver_connection = new RTCPeerConnection(STUN_config);
+    receiver_connection.ondatachannel = receiveChannelCallback;
 
     // Setup signaling
     signaling = new WebSocket(signaling_address);
     signaling.sendBlob = function(payload) {
         console.log("Sending blob");
-        this.send(JSON.stringify(payload));
+        console.log(payload);
+        blob = JSON.stringify(payload);
+        console.log(blob);
+        this.send(blob);
     } 
 
 // send any ice candidates to the other peer                                                                                                                                                                       
-    receiver_connection.onicecandidate = function(candidate) {
+    receiver_connection.onicecandidate = function(e) {
       console.log("onicecandidate event fired");
-      console.log(candidate);
-      signaling.sendBlob(candidate);
+      console.log(e);
+      if(e.candidate)
+      {
+        console.log("SENDING THE CANDIDATE TO SENDER");
+        payload = {candidate: e.candidate};
+        signaling.sendBlob(payload);
+      }
+      else
+      { 
+        console.log("Dud candidate?");
+      }
     }
 
     signaling.onmessage = async (event) => {
-      console.log("Message received: %s", event.data);
-      payload = JSON.parse(event.data);
+      payload = JSON.parse(event.data); 
       desc = payload.desc;
       candidate = payload.candidate;
+      
+      console.log("Message received");
       try {
         if (desc) {
           // if we get an offer, we need to reply with an answer
           if (desc.type === 'offer') {
-            console.log("Got an offer!!!");
+            console.log("Got an offer");
             await receiver_connection.setRemoteDescription(desc);
             await receiver_connection.setLocalDescription(await receiver_connection.createAnswer());
-            signaling.sendBlob({desc: receiver_connection.localDescription});     
-          } else if (desc.type === 'answer') { // My understanding is that the receiver will not get an answer
-            console.log("GOT ANSWER!!!");
-            await receiver_connection.setRemoteDescription(desc);               
-          } else {                                            
-            console.log('Unsupported SDP type.');            
-          }                                                 
-        } else if (candidate) {                            
-          console.log("Got a candidate!");
-          await receiver_connection.addIceCandidate(candidate);            
-        }
+            signaling.sendBlob({desc: receiver_connection.localDescription});
+          } else if (desc.type === 'answer') {
+            console.log("Got an answer");
+            await receiver_connection.setRemoteDescription(desc);
+          } else {
+            console.log('Unsupported SDP type.');
+          } 
+        } else if (candidate) {
+          console.log("RECEIVED A FUCKING CANDIDATE");
+          await receiver_connection.addIceCandidate(candidate);
+        } 
       } catch (err) {
         console.error(err);
-      }
+      } 
     };
+
   }
-  
+
+
   // Connect the two peers. Normally you look for and connect to a remote
   // machine here, but we're just connecting two local objects, so we can
   // bypass that step.
@@ -84,7 +100,6 @@
   function connectPeers() {
     // Create the remote connection and its event listeners
     
-    receiver_connection.ondatachannel = receiveChannelCallback;
 
      
     
@@ -134,6 +149,7 @@
   // channel is ready to be connected to the remote.
   
   function receiveChannelCallback(event) {
+    console.log("RECEIVED A FUCKING CHANNEL");
     receiveChannel = event.channel;
     receiveChannel.onmessage = handleReceiveMessage;
     receiveChannel.onopen = handleReceiveChannelStatusChange;

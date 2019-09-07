@@ -43,26 +43,28 @@
     sender_connection = new RTCPeerConnection(STUN_config);
 
     signaling.onmessage = async (event) => {
-      console.log("Message received");
       payload = JSON.parse(event.data);
       desc = payload.desc;
       candidate = payload.candidate;
 
+      console.log("Message received");
       try {
         if (desc) {
-          // Sender will not get an offer
-          if(desc.type === 'offer')
-          {
-            console.log("Got an offer!!!!");
-          }
-          if (desc.type === 'answer') {
-            console.log("Got an answer!");
+          // if we get an offer, we need to reply with an answer
+          if (desc.type === 'offer') {
+            console.log("Got an offer??");
+            await sender_connection.setRemoteDescription(desc);
+            await sender_connection.setLocalDescription(await sender_connection.createAnswer());
+            signaling.sendBlob({desc: sender_connection.localDescription});
+          } else if (desc.type === 'answer') {
+            console.log("Got an answer");
             await sender_connection.setRemoteDescription(desc);
           } else {
             console.log('Unsupported SDP type.');
           }
         } else if (candidate) {
-          console.log("Got a candidate");
+          console.log("RECEIVED A FUCKING CANDIDATE");
+          console.log(candidate);
           await sender_connection.addIceCandidate(candidate);
         }
       } catch (err) {
@@ -70,11 +72,19 @@
       }
     };
 
+
     // send any ice candidates to the other peer
-    sender_connection.onicecandidate = function(candidate) {
+    sender_connection.onicecandidate = function(e) {
         console.log("onicecandidate event fired");
-        console.log(candidate);
-        signaling.sendBlob(candidate);
+        if(e.candidate)
+        {
+          payload = {candidate: e.candidate};
+          signaling.sendBlob(payload);
+        }
+        else
+        {
+          console.log("Dud candidate?");
+        }
     }
   }
 
@@ -105,18 +115,6 @@
         console.error(err);
       }
     };
-
-    // Now create an offer to connect; this starts the process
-    // This handshake has to be broken apart to work over websocket signaling 
-/*
-    sender_connection.createOffer()
-    .then(offer => sender_connection.setLocalDescription(offer))
-    .then(() => receiver_connection.setRemoteDescription(sender_connection.localDescription))
-    .then(() => receiver_connection.createAnswer())
-    .then(answer => receiver_connection.setLocalDescription(answer))
-    .then(() => sender_connection.setRemoteDescription(receiver_connection.localDescription))
-    .catch(handleCreateDescriptionError);
-*/
   }
     
   // Handle errors attempting to create a description;

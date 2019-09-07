@@ -1,0 +1,60 @@
+*receiver*
+- onicecandidate
+  - send candidate to other guy
+- ontrack (obviously not needed for data)
+  - set the video object
+- signaling.onmessage
+  - if desc
+    - if offer
+      - setRemoteDescription to the offer
+      - set local description to createAnswer
+      - send local description to other guy
+    - if answer
+      - setRemoteDescription
+  - if candidate
+    - addIceCandidate
+! receiver does not have an onnegotiationneeded event callback
+  - so basically the sender is the one that kicks all this off
+
+*sender*
+- onicecandidate
+  - send candidate to the other guy
+- onnegotiationneeded
+  - This is what kicks things off
+  - setlocaldescription based on createOffer
+  - send localdescription (which now has the createOffer in it) to the other guy
+- signaling.onmessage
+  ! IDENTICAL to receiver
+  - behaviour is just different because of the cases the sender/receiver falls into
+    based on message types
+- ontrack (obviously not needed)
+
+
+*interpreted steps of mine*
+- sender onnegotiationneeded fired
+- sender sets local description to a createOffer
+- sender sends local description to receiver (in the desc field of a JSON)
+- receiver gets a message, checks the desc field, its an offer
+- receiver sets its remote description to the offer
+- receiver sets its local description to createAnswer
+- receiver sends its local description to sender (in the desc field)
+- sender gets a message, checks the desc field, its an answer
+- sender sets its remote description to the answer
+
+
+*orig* - translated to our vernacular
+- sender creates an offer
+- sender sets its local description to that offerS
+- receiver sets its remote description to receiver's local description
+- receiver creates an answer
+- receiver sets its local description to that answer
+- sender sets its remote description to receiver's local description
+
+*orig*
+- local creates an offer
+- local sets its local description to that offerS
+- remote sets its remote description to local's local description
+- remote creates an answer
+- remote sets its local description to that answer
+- local sets its remote description to remote's local description
+
