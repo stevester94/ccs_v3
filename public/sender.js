@@ -13,8 +13,15 @@ signaling.sendBlob = function(payload) {
 // send any ice candidates to the other peer
 pc.onicecandidate = function(e) {
     console.log("onicecandidate event fired");
-    payload = {candidate: e.candidate};
-    signaling.sendBlob(payload);
+    if(e.candidate)
+    {
+      payload = {candidate: e.candidate};
+      signaling.sendBlob(payload);
+    }
+    else
+    {
+      console.log("dud candidate");
+    }
 }
 
 // let the "negotiationneeded" event trigger offer generation
