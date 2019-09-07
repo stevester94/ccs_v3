@@ -9,10 +9,12 @@
   var receiveBox = null;
   
   var sender_connection = null;   // RTCPeerConnection for our "local" connection
-  var receiver_connection = null;  // RTCPeerConnection for the "remote"
   
   var sendChannel = null;       // RTCDataChannel for the local (sender)
-  var receiveChannel = null;    // RTCDataChannel for the remote (receiver)
+
+  var signaling = null; // Sender websocket
+  var signaling_address = "ws://localhost:8081";
+  var STUN_config = {iceServers: [{urls: 'stun:stun.l.google.com:19302'}]};
   
   // Functions
   
@@ -30,7 +32,52 @@
     connectButton.addEventListener('click', connectPeers, false);
     disconnectButton.addEventListener('click', disconnectPeers, false);
     sendButton.addEventListener('click', sendMessage, false);
+
+    // Setup signaling
+    signaling = new WebSocket(signaling_address);
+    signaling.sendBlob = function(payload) {
+        console.log("sending blob");
+        this.send(JSON.stringify(payload));
+    }
+
+    sender_connection = new RTCPeerConnection(STUN_config);
+
+    signaling.onmessage = async (event) => {
+      console.log("Message received");
+      payload = JSON.parse(event.data);
+      desc = payload.desc;
+      candidate = payload.candidate;
+
+      try {
+        if (desc) {
+          // Sender will not get an offer
+          if(desc.type === 'offer')
+          {
+            console.log("Got an offer!!!!");
+          }
+          if (desc.type === 'answer') {
+            console.log("Got an answer!");
+            await sender_connection.setRemoteDescription(desc);
+          } else {
+            console.log('Unsupported SDP type.');
+          }
+        } else if (candidate) {
+          console.log("Got a candidate");
+          await sender_connection.addIceCandidate(candidate);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    // send any ice candidates to the other peer
+    sender_connection.onicecandidate = function(candidate) {
+        console.log("onicecandidate event fired");
+        console.log(candidate);
+        signaling.sendBlob(candidate);
+    }
   }
+
   
   // Connect the two peers. Normally you look for and connect to a remote
   // machine here, but we're just connecting two local objects, so we can
@@ -39,30 +86,29 @@
   function connectPeers() {
     // Create the local connection and its event listeners
     
-    sender_connection = new RTCPeerConnection();
     
     // Create the data channel and establish its event listeners
     sendChannel = sender_connection.createDataChannel("sendChannel");
     sendChannel.onopen = handleSendChannelStatusChange;
     sendChannel.onclose = handleSendChannelStatusChange;
     
-    // Create the remote connection and its event listeners
-    
-    receiver_connection = new RTCPeerConnection();
-    receiver_connection.ondatachannel = receiveChannelCallback;
-    
-    // Set up the ICE candidates for the two peers
-    
-    sender_connection.onicecandidate = e => !e.candidate
-        || receiver_connection.addIceCandidate(e.candidate)
-        .catch(handleAddCandidateError);
+    sender_connection.onnegotiationneeded = async () => {
+      console.log("onnegotiationneeded event fired");
+      try {
+        await sender_connection.setLocalDescription(await sender_connection.createOffer());
 
-    receiver_connection.onicecandidate = e => !e.candidate
-        || sender_connection.addIceCandidate(e.candidate)
-        .catch(handleAddCandidateError);
-    
+        // send the offer to the other peer
+        payload = {desc: sender_connection.localDescription};
+        console.log("Sending: %s", JSON.stringify(payload));
+        signaling.sendBlob(payload);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
     // Now create an offer to connect; this starts the process
-    
+    // This handshake has to be broken apart to work over websocket signaling 
+/*
     sender_connection.createOffer()
     .then(offer => sender_connection.setLocalDescription(offer))
     .then(() => receiver_connection.setRemoteDescription(sender_connection.localDescription))
@@ -70,6 +116,7 @@
     .then(answer => receiver_connection.setLocalDescription(answer))
     .then(() => sender_connection.setRemoteDescription(receiver_connection.localDescription))
     .catch(handleCreateDescriptionError);
+*/
   }
     
   // Handle errors attempting to create a description;
@@ -120,6 +167,8 @@
   // in this example.
   
   function handleSendChannelStatusChange(event) {
+    console.log("Send status changed");
+
     if (sendChannel) {
       var state = sendChannel.readyState;
     
@@ -138,39 +187,6 @@
     }
   }
   
-  // Called when the connection opens and the data
-  // channel is ready to be connected to the remote.
-  
-  function receiveChannelCallback(event) {
-    receiveChannel = event.channel;
-    receiveChannel.onmessage = handleReceiveMessage;
-    receiveChannel.onopen = handleReceiveChannelStatusChange;
-    receiveChannel.onclose = handleReceiveChannelStatusChange;
-  }
-  
-  // Handle onmessage events for the receiving channel.
-  // These are the data messages sent by the sending channel.
-  
-  function handleReceiveMessage(event) {
-    var el = document.createElement("p");
-    var txtNode = document.createTextNode(event.data);
-    
-    el.appendChild(txtNode);
-    receiveBox.appendChild(el);
-  }
-  
-  // Handle status changes on the receiver's channel.
-  
-  function handleReceiveChannelStatusChange(event) {
-    if (receiveChannel) {
-      console.log("Receive channel's status has changed to " +
-                  receiveChannel.readyState);
-    }
-    
-    // Here you would do stuff that needs to be done
-    // when the channel's status changes.
-  }
-  
   // Close the connection, including data channels if they're open.
   // Also update the UI to reflect the disconnected status.
   
@@ -179,17 +195,13 @@
     // Close the RTCDataChannels if they're open.
     
     sendChannel.close();
-    receiveChannel.close();
     
     // Close the RTCPeerConnections
     
     sender_connection.close();
-    receiver_connection.close();
 
     sendChannel = null;
-    receiveChannel = null;
     sender_connection = null;
-    receiver_connection = null;
     
     // Update user interface elements
     
