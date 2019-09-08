@@ -1,0 +1,27 @@
+<script>
+window.onload = async function()
+{
+  const constraints = {video: true};
+
+  function handleError(error) {
+    console.error('navigator.getUserMedia error: ', error);
+  }
+
+  const captureVideoButton = document.getElementById("the_video_button");
+  const video = document.getElementById('the_video');
+
+  captureVideoButton.onclick = function() {
+    navigator.mediaDevices.getUserMedia(constraints).
+      then(handleSuccess).catch(handleError);
+  };
+
+  function handleSuccess(stream) {
+    video.srcObject = stream;
+  }
+}
+</script>
+
+<video id="the_video" class="videostream" autoplay></video>
+<button id="the_video_button" class="capture-button">Capture video</button> 
+
+
