@@ -104,33 +104,45 @@ signaling.onmessage = async (event) => {
   }
 };
 
-function _startScreenCapture() {
+// Old way
+/*
+function _startScreenCapture(success) {
     if (navigator.getDisplayMedia) {
+      console.log("First method");
       return navigator.getDisplayMedia({video: true});
     } else if (navigator.mediaDevices.getDisplayMedia) {
+      console.log("Second method");
       return navigator.mediaDevices.getDisplayMedia({video: true});
     } else {
+      console.log("Third method");
       return navigator.mediaDevices.getUserMedia({video: {mediaSource: 'screen'}});
     }
 }
+*/
 
 window.onload = async function() {
   try {
+    function handleSuccess(stream)
+    {
+      const video = document.getElementById("self_view");
+      video.srcObject = stream;
+
+      the_alert = document.getElementById("is_streaming");
+      the_alert.innerHTML = "STREAMING!!";
+    }
+
+    function handleError(error)
+    {
+      console.error('navigator.getUserMedia error: ', error);
+    }
     // get local stream, show it in self-view and add it to be sent
-    const stream =
-      //await navigator.mediaDevices.getUserMedia(constraints);
-      await _startScreenCapture();
     
     console.log("warning, gimping RTC");
     /*
     stream.getTracks().forEach((track) =>
       pc.addTrack(track, stream));
     */
-    the_alert = document.getElementById("is_streaming");
-    the_alert.innerHTML = "STREAMING!!";
-
-    self_view = document.getElementById("self_view");
-    self_view.srcObject = stream; // Our stream
+    navigator.mediaDevices.getDisplayMedia({video: true}).then(handleSuccess).catch(handleError);    
 
   } catch (err) {
     console.error(err);

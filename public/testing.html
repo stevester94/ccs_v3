@@ -11,8 +11,12 @@ window.onload = async function()
   const video = document.getElementById('the_video');
 
   captureVideoButton.onclick = function() {
+    // Original Way
+    /*
     navigator.mediaDevices.getUserMedia(constraints).
       then(handleSuccess).catch(handleError);
+    */
+    navigator.mediaDevices.getDisplayMedia({video: true}).then(handleSuccess).catch(handleError);
   };
 
   function handleSuccess(stream) {
@@ -21,7 +25,7 @@ window.onload = async function()
 }
 </script>
 
-<video id="the_video" class="videostream" autoplay></video>
+<video width="640" height="480" id="the_video" class="videostream" autoplay></video>
 <button id="the_video_button" class="capture-button">Capture video</button> 
 
 
