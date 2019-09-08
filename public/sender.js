@@ -50,8 +50,7 @@ pc.onicecandidate = function(e) {
 }
 
 // let the "negotiationneeded" event trigger offer generation
-console.log("warning, disabling RTC aspect!");
-/*
+//console.log("warning, disabling RTC aspect!");
 pc.onnegotiationneeded = async () => {
   console.log("onnegotiationneeded event fired");
   try {
@@ -65,7 +64,6 @@ pc.onnegotiationneeded = async () => {
     console.error(err);
   }
 };
-*/
 
 // once remote track media arrives, show it in remote video element
 pc.ontrack = (event) => {
@@ -127,6 +125,9 @@ window.onload = async function() {
       const video = document.getElementById("self_view");
       video.srcObject = stream;
 
+      stream.getTracks().forEach((track) =>
+        pc.addTrack(track, stream));
+
       the_alert = document.getElementById("is_streaming");
       the_alert.innerHTML = "STREAMING!!";
     }
@@ -136,14 +137,7 @@ window.onload = async function() {
       console.error('navigator.getUserMedia error: ', error);
     }
     // get local stream, show it in self-view and add it to be sent
-    
-    console.log("warning, gimping RTC");
-    /*
-    stream.getTracks().forEach((track) =>
-      pc.addTrack(track, stream));
-    */
     navigator.mediaDevices.getDisplayMedia({video: true}).then(handleSuccess).catch(handleError);    
-
   } catch (err) {
     console.error(err);
   }
