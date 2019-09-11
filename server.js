@@ -34,14 +34,19 @@ receiver_socket.on('connection', function connection(ws) {
 });
 
 
-// Static server portion
-var express = require('express');
-var app = express();
+// SSL Variant
+const express = require('express');
+const app = express();
+const https = require('https');
+const fs = require('fs');
 
 app.use(express.static('public'));
 
-app.listen(8080, function () {
-  console.log('Example app listening on port 8080!');
-});
-
+// we will pass our 'app' to 'https' server
+https.createServer({
+    key: fs.readFileSync('./secrets/privkey1.pem'),
+    cert: fs.readFileSync('./secrets/cert1.pem')
+    //passphrase: 'E'
+}, app)
+.listen(443);
 
