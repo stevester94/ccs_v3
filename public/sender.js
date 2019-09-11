@@ -143,7 +143,8 @@ window.onload = async function() {
       console.error('navigator.getUserMedia error: ', error);
     }
     // get local stream, show it in self-view and add it to be sent
-    navigator.mediaDevices.getDisplayMedia({video: true}).then(handleSuccess).catch(handleError);    
+    navigator.mediaDevices.getUserMedia({video: true}).then(handleSuccess).catch(handleError);    
+    //navigator.mediaDevices.getDisplayMedia({video: true}).then(handleSuccess).catch(handleError);    
   } catch (err) {
     console.error(err);
   }

@@ -71,10 +71,13 @@ signaling.onmessage = async (event) => {
       // if we get an offer, we need to reply with an answer
       if (desc.type === 'offer') {
         await pc.setRemoteDescription(desc);
+
+        /* // For 2-way streaming
         const stream =
           await navigator.mediaDevices.getUserMedia(constraints);
         stream.getTracks().forEach((track) =>
           pc.addTrack(track, stream));
+        */
         await pc.setLocalDescription(await pc.createAnswer());
         signaling.sendBlob({desc: pc.localDescription});
       } else if (desc.type === 'answer') {
