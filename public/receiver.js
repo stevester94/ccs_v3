@@ -7,7 +7,7 @@ const configuration = {iceServers: [{urls: 'stun:stun.l.google.com:19302'}]};
 const pc = new RTCPeerConnection(configuration);
 
 signaling.onopen = function (event) {
-  signaling.send("HELLO");
+  signaling.send("HELLO_RECEIVER");
 };
 
 

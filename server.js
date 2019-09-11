@@ -1,44 +1,16 @@
 // Websocket server portion
 const WebSocket = require('ws');
- 
-
-const receiver_socket = new WebSocket.Server({ port: 8082 });
-const sender_socket   = new WebSocket.Server({ port: 8081 });
-
-// The sender will broadcast to all receivers 
-sender_socket.on('connection', function connection(ws) {
-  console.log("A sender has connected");
-
-  ws.on('message', function incoming(message) {
-    console.log('received: %s on sender socket', message);
-
-    receiver_socket.clients.forEach(function(client) {
-      console.log("  Relaying to receiver");
-      client.send(message);
-    });
-  });
-});
-
-receiver_socket.on('connection', function connection(ws) {
-  console.log("A receiver has connected");
-
-  ws.on('message', function incoming(message) {
-    console.log('received: %s on receiver socket', message);
-
-    // Yeah it's fucky, I just want to see it work
-    sender_socket.clients.forEach(function(client) {
-      console.log("  Relaying to sender");
-      client.send(message);
-    });
-  });
-});
-
 
 // SSL Variant
 const express = require('express');
 const app = express();
 const https = require('https');
 const fs = require('fs');
+
+// Chromium spawner
+const { spawn } = require('child_process');
+var chromium = null;
+
 
 app.use(express.static('public'));
 
@@ -57,9 +29,34 @@ wss.on('connection', function connection(ws) {
   conns.push(ws);
   ws.on('message', function message(msg) {
     console.log(msg);
-    if(msg == "HELLO")
+    if(msg === "HELLO_RECEIVER")
     {
-      console.log("Received a HELLO, not forwarding");
+      console.log("Received a HELLO_RECEIVER, not forwarding, and spinning up sender");      
+      chromium = spawn("su" , ["pi", "-c", "chromium-browser https://www.ccs.ssmackey.com/sender.html"]);
+
+      chromium.stdout.on('data', (data) => {
+        console.log(`stdout: ${data}`);
+      });
+
+      chromium.stderr.on('data', (data) => {
+        console.error(`stderr: ${data}`);
+      });
+
+      chromium.on('close', (code) => {
+        console.log(`child process exited with code ${code}`);
+      });
+
+      ws.on("close", function(e) {
+        console.log("Receiver has closed, do the thing");
+        chromium.kill();
+        chromium = null;
+      });
+
+      return;
+    }
+    if(msg === "HELLO_SENDER")
+    {
+      console.log("Received a HELLO_SENDER, not forwarding, marking as sender");
       return;
     }
 

@@ -30,7 +30,7 @@ function handleSendChannelStatusChange(e)
 }
 
 signaling.onopen = function (event) {
-  signaling.send("HELLO");
+  signaling.send("HELLO_SENDER");
 };
 
 // END hot garbage
