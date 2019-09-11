@@ -1,10 +1,15 @@
 // handles JSON.stringify/parse
 
-signaling = new WebSocket('ws://localhost:8082');
+signaling = new WebSocket('wss://www.ccs.ssmackey.com:443');
 const REQUEST_VIDEO = false;
 const constraints = {audio: true, video: REQUEST_VIDEO}; // We don't have video, but we have a mic...
 const configuration = {iceServers: [{urls: 'stun:stun.l.google.com:19302'}]};
 const pc = new RTCPeerConnection(configuration);
+
+signaling.onopen = function (event) {
+  signaling.send("HELLO");
+};
+
 
 // This hot garbage is just for sanity checking
 pc.ondatachannel = receiveChannelCallback; 

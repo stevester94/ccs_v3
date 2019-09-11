@@ -2,7 +2,7 @@
 const REQUEST_VIDEO = true;
 const REQUEST_AUDIO = false;
 //signaling = new WebSocket('ws://localhost:8081');
-signaling = new WebSocket('ws://192.168.1.178:8081');
+signaling = new WebSocket('wss://www.ccs.ssmackey.com:443');
 const constraints = {audio: REQUEST_AUDIO, video: REQUEST_VIDEO}; // We don't have video, but we have a mic...
 const configuration = {iceServers: [{urls: 'stun:stun.l.google.com:19302'}]};
 const pc = new RTCPeerConnection(configuration);
@@ -28,6 +28,11 @@ function handleSendChannelStatusChange(e)
     }
   }
 }
+
+signaling.onopen = function (event) {
+  signaling.send("HELLO");
+};
+
 // END hot garbage
 
 signaling.sendBlob = function(payload) {
@@ -78,6 +83,7 @@ signaling.onmessage = async (event) => {
   candidate = payload.candidate;
 
   console.log("Message received");
+  console.log(payload);
   try {
     if (desc) {
       // if we get an offer, we need to reply with an answer
