@@ -32,7 +32,8 @@ wss.on('connection', function connection(ws) {
     if(msg === "HELLO_RECEIVER")
     {
       console.log("Received a HELLO_RECEIVER, not forwarding, and spinning up sender");      
-      chromium = spawn("su" , ["pi", "-c", "chromium-browser https://www.ccs.ssmackey.com/sender.html"]);
+      //chromium = spawn("su" , ["pi", "-c", "chromium-browser https://www.ccs.ssmackey.com/sender.html"]);
+      chromium = spawn("su" , ["pi", "-c", "xvfb-run chromium-browser https://www.ccs.ssmackey.com/sender.html"]);
 
       chromium.stdout.on('data', (data) => {
         console.log(`stdout: ${data}`);
