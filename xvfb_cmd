@@ -1,0 +1,1 @@
+xvfb-run chromium-browser --use-fake-ui-for-media-stream --use-fake-device-for-media-stream --use-file-for-fake-video-capture=/tmp/output.mjpeg --allow-file-access https://www.ccs.ssmackey.com/sender.html
