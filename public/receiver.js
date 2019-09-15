@@ -64,6 +64,7 @@ signaling.onmessage = async (event) => {
   payload = JSON.parse(event.data);
   desc = payload.desc;
   candidate = payload.candidate;
+  C2I       = payload.C2I;
 
 
   try {
@@ -87,7 +88,20 @@ signaling.onmessage = async (event) => {
       }
     } else if (candidate) {
       await pc.addIceCandidate(candidate);
+    } else if(C2I) {
+      if(C2I === "sender_killed") {
+        console.log("Received C2I that sender was killed");
+        title = document.getElementById("title");
+        title.innerHTML = "Webcam died, reload this page";
+        alert("Webcam died, reload this page");
+      }
+      else {
+        console.log("Unknown C2I received");
+      }
+    } else {
+      console.log("Unknown message received");
     }
+        
   } catch (err) {
     console.error(err);
   }
