@@ -128,8 +128,8 @@ window.onload = async function() {
   try {
     function handleSuccess(stream)
     {
-      const video = document.getElementById("self_view");
-      video.srcObject = stream;
+      //const video = document.getElementById("self_view");
+      //video.srcObject = stream;
 
       stream.getTracks().forEach((track) =>
         pc.addTrack(track, stream));
