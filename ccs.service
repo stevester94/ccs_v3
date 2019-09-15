@@ -1,0 +1,12 @@
+[Unit]
+Description=Node server for CCS
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=root
+ExecStart=node /home/pi/projects/ccs_v3/server.js
+
+[Install]
+WantedBy=multi-user.target

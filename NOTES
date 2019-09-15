@@ -1,0 +1,5 @@
+Copy service to /etc/systemd/system/
+Use "systemctl start ccs" to just run it
+Use "systemctl enable ccs" to enable it on boot
+Use journalctl -u ccs.service to look at logs
+

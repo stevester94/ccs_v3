@@ -1,3 +1,12 @@
+// Constants
+const PROJECT_ROOT  = "/home/pi/Projects/ccs_v3/";
+const PRIV_KEY_PATH = PROJECT_ROOT+"/secrets/privkey1.pem";
+const CERT_PATH     = PROJECT_ROOT+"/secrets/cert1.pem";
+const DISK_USAGE_ABORT_THRESH = 0.75;
+const DISK_CHECK_PATH = PROJECT_ROOT;
+const BUFFER_FILE_PATH = PROJECT_ROOT+"/output.y4m";
+const PUBLIC_PATH = PROJECT_ROOT+"/public/";
+
 // Websocket server portion
 const WebSocket = require('ws');
 
@@ -15,16 +24,14 @@ var ffmpeg     = null;
 var cleanup    = null;
 var kill_proc  = null;
 var disk_timer = null;
-var DISK_USAGE_ABORT_THRESH = 0.75;
 
 
-app.use(express.static('public'));
+app.use(express.static(PUBLIC_PATH));
 
 // we will pass our 'app' to 'https' server
 const server = https.createServer({
-    key: fs.readFileSync('./secrets/privkey1.pem'),
-    cert: fs.readFileSync('./secrets/cert1.pem')
-    //passphrase: 'E'
+    key: fs.readFileSync(PRIV_KEY_PATH),
+    cert: fs.readFileSync(CERT_PATH)
 }, app);
 
 // Alert all the receivers that the sender was killed
@@ -43,7 +50,7 @@ function alert_sender_killed()
 async function check_disk_usage()
 {
   console.log("CHECKING DISK USAGE");
-  const res = await disk.check(".");
+  const res = await disk.check(DISK_CHECK_PATH);
   //console.log(`Disk free: ${res.free}`);
   //console.log(`Disk available: ${res.available}`);
   //console.log(`Disk total: ${res.total}`);
@@ -63,8 +70,9 @@ function init_sender()
 {
   disk_timer = setInterval(check_disk_usage, 1000); //time is in ms
 
-  chromium  = spawn("su" , ["pi", "-c", "xvfb-run chromium-browser -a --use-fake-ui-for-media-stream --use-fake-device-for-media-stream --use-file-for-fake-video-capture='output.y4m' --allow-file-access https://www.ccs.ssmackey.com/sender.html"]);
-  ffmpeg    = spawn("su" , ["pi", "-c", "ffmpeg -f v4l2 -framerate 25 -video_size 640x480 -i /dev/video0 output.y4m"]);
+  chromium  = spawn("su" , ["pi", "-c", `xvfb-run chromium-browser -a --use-fake-ui-for-media-stream --use-fake-device-for-media-stream --use-file-for-fake-video-capture='${BUFFER_FILE_PATH}' --allow-file-access https://www.ccs.ssmackey.com/sender.html`]);
+
+  ffmpeg    = spawn("su" , ["pi", "-c", `ffmpeg -f v4l2 -framerate 25 -video_size 640x480 -i /dev/video0 ${BUFFER_FILE_PATH}`]);
 
   chromium.stdout.on('data', (data) => {
     console.log(`stdout: ${data}`);
@@ -100,7 +108,7 @@ function destroy_sender()
     console.log("Warning, chromium and ffmpeg were killed already");
   }
 
-  cleanup   = spawn("rm", ["output.y4m"]);
+  cleanup   = spawn("rm", [BUFFER_FILE_PATH]);
   kill_proc = spawn("killall", ["Xvfb"]);
 
   cleanup.on('close', (code) => {
