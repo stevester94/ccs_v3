@@ -9,7 +9,10 @@ const fs = require('fs');
 
 // Chromium spawner
 const { spawn } = require('child_process');
-var chromium = null;
+var chromium  = null;
+var ffmpeg    = null;
+var cleanup   = null;
+var kill_proc = null;
 
 
 app.use(express.static('public'));
@@ -31,25 +34,48 @@ wss.on('connection', function connection(ws) {
     console.log(msg);
     if(msg === "HELLO_RECEIVER")
     {
-      console.log("Received a HELLO_RECEIVER, not forwarding, and spinning up sender");      
-      //chromium = spawn("su" , ["pi", "-c", "chromium-browser https://www.ccs.ssmackey.com/sender.html"]);
-      chromium = spawn("su" , ["pi", "-c", "xvfb-run chromium-browser https://www.ccs.ssmackey.com/sender.html"]);
+      //console.log("Received a HELLO_RECEIVER, not forwarding, and spinning up sender");      
+      chromium  = spawn("su" , ["pi", "-c", "xvfb-run chromium-browser -a --use-fake-ui-for-media-stream --use-fake-device-for-media-stream --use-file-for-fake-video-capture='output.y4m' --allow-file-access https://www.ccs.ssmackey.com/sender.html"]);
+      ffmpeg    = spawn("su" , ["pi", "-c", "ffmpeg -f v4l2 -framerate 25 -video_size 640x480 -i /dev/video0 output.y4m"]);
+
+    
 
       chromium.stdout.on('data', (data) => {
         console.log(`stdout: ${data}`);
       });
-
       chromium.stderr.on('data', (data) => {
         console.error(`stderr: ${data}`);
       });
-
       chromium.on('close', (code) => {
-        console.log(`child process exited with code ${code}`);
+        console.log(`chromium process exited with code ${code}`);
       });
+      ffmpeg.stdout.on('data', (data) => {
+        console.log(`stdout: ${data}`);
+      });
+      ffmpeg.stderr.on('data', (data) => {
+        console.error(`stderr: ${data}`);
+      });
+      ffmpeg.on('close', (code) => {
+        console.log(`ffmpeg process exited with code ${code}`);
+      });
+ 
+      
 
       ws.on("close", function(e) {
         console.log("Receiver has closed, do the thing");
         chromium.kill();
+        ffmpeg.kill();
+        cleanup   = spawn("rm", ["output.y4m"]);
+        kill_proc = spawn("killall", ["Xvfb"]);
+
+        cleanup.on('close', (code) => {
+          console.log(`cleanup exited with code ${code}`);
+        });
+        kill_proc.on('close', (code) => {
+          console.log(`kill_proc exited with code ${code}`);
+        });
+
+        ffmpeg   = null;
         chromium = null;
       });
 
