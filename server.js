@@ -37,8 +37,10 @@ var disk_timer = null;
 
 // We do this to make sure starting with a clean slate
 cleanup   = spawn("rm", [BUFFER_FILE_PATH]);
+kill_proc = spawn("killall", ["Xvfb"]);
 
-password = fs.readFileSync(PASSWORD_PATH);
+password = String(fs.readFileSync(PASSWORD_PATH));
+password = password.trim();
 
 
 app.use(express.static(PUBLIC_PATH));
@@ -165,21 +167,31 @@ wss.on('connection', function connection(ws) {
     }
     
     // Receied a C2I message
+    // These do not get broadcasted
     if(json != null && json.C2I)
     {
-      if(json.C2I === ICD.HELLO_RECEIVER)
-      {
-        init_sender(); 
-        ws.on("close", function(e) {
-          destroy_sender();
-        });
-
-        return;
+      if(json.C2I === ICD.HELLO_RECEIVER) {
+        console.log("Received a hello receiver");
+        ws.send(JSON.stringify({C2I: ICD.PASSWORD_CHALLENGE}));
       }
-      if(msg === ICD.HELLO_SENDER)
-      {
+      else if(json.C2I === ICD.HELLO_SENDER) {
         console.log("Received a HELLO_SENDER, not forwarding, marking as sender");
         return;
+      }
+      else if(json.C2I === ICD.PASSWORD_RESPONSE) {
+        console.log(`Received a password response: ${json.payload}`);
+        if(json.payload === password) {
+          console.log("Password accepted");
+          ws.send(JSON.stringify({C2I: ICD.PASSWORD_ACCEPTED}));
+          init_sender(); 
+          ws.on("close", function(e) {
+            destroy_sender();
+          });
+        }
+        else {
+          console.log("Password denied");
+          ws.send(JSON.stringify({C2I: ICD.PASSWORD_DENIED}));
+        }
       }
     }
     else

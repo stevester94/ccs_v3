@@ -61,15 +61,42 @@ pc.ontrack = (event) => {
 
 function C2I_handler(C2I)
 {
-  if(C2I === "sender_killed") {
+  password_field = document.getElementById("password_field");   
+  submit_button = document.getElementById("submit_button");   
+  video_elem    = document.getElementById("the_video");
+
+  if(C2I === ICD.SENDER_KILLED) {
     console.log("Received C2I that sender was killed");
     title = document.getElementById("title");
     title.innerHTML = "Webcam died, reload this page";
     alert("Webcam died, reload this page");
+  } 
+  else if(C2I === ICD.PASSWORD_CHALLENGE) {
+    password_field.hidden = false;
+    submit_button.hidden = false;
   }
+  else if(C2I === ICD.PASSWORD_ACCEPTED) {
+    console.log("Password accepted");
+    password_field.hidden = true;
+    submit_button.hidden  = true;
+    video_elem.hidden     = false;
+    alert("Password accepted! :D");
+  }
+  else if(C2I === ICD.PASSWORD_DENIED) {
+    console.log("Password rejected");
+    alert("Password denied, refresh page to try again" );
+  }
+    
   else {
     console.log("Unknown C2I received");
   }
+}
+
+function submit_password()
+{
+  password_field = document.getElementById("password_field");   
+  console.log("submit password called");
+  signaling.sendBlob({C2I: ICD.PASSWORD_RESPONSE, payload: password_field.value});
 }
 
 signaling.onmessage = async (event) => {
