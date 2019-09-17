@@ -6,6 +6,13 @@ const DISK_USAGE_ABORT_THRESH = 0.50; // Minimum amount of disk space to keep ru
 const DISK_CHECK_PATH = PROJECT_ROOT;
 const BUFFER_FILE_PATH = PROJECT_ROOT+"/output.y4m";
 const PUBLIC_PATH = PROJECT_ROOT+"/public/";
+const PASSWORD_PATH = PROJECT_ROOT+"/secrets/password";
+const SHARE_PATH = PROJECT_ROOT + "public/ICD.js";
+
+const ICD = require(SHARE_PATH).ICD;
+
+
+var password = null;
 
 const DEBUG_NO_SPAWN = false;
 
@@ -31,6 +38,8 @@ var disk_timer = null;
 // We do this to make sure starting with a clean slate
 cleanup   = spawn("rm", [BUFFER_FILE_PATH]);
 
+password = fs.readFileSync(PASSWORD_PATH);
+
 
 app.use(express.static(PUBLIC_PATH));
 
@@ -47,7 +56,7 @@ function alert_sender_killed()
 {
   conns.forEach(function(conn)
   {
-      payload = {C2I: "sender_killed"};
+      payload = {C2I: ICD.SENDER_KILLED};
       conn.send(JSON.stringify(payload));
   });
 }
@@ -148,32 +157,45 @@ wss.on('connection', function connection(ws) {
   conns.push(ws);
   ws.on('message', function message(msg) {
     console.log(msg);
-    if(msg === "HELLO_RECEIVER")
+    var json = null;
+    
+    try {
+      json = JSON.parse(msg);
+    } catch(e) {
+    }
+    
+    // Receied a C2I message
+    if(json != null && json.C2I)
     {
-      init_sender(); 
-      ws.on("close", function(e) {
-        destroy_sender();
+      if(json.C2I === ICD.HELLO_RECEIVER)
+      {
+        init_sender(); 
+        ws.on("close", function(e) {
+          destroy_sender();
+        });
+
+        return;
+      }
+      if(msg === ICD.HELLO_SENDER)
+      {
+        console.log("Received a HELLO_SENDER, not forwarding, marking as sender");
+        return;
+      }
+    }
+    else
+    {
+      conns.forEach(function(conn)
+      {
+        if(conn != ws)
+        {
+          conn.send(msg);
+        }
+        else
+        {
+          console.log("Not forwarding to self");
+        }
       });
-
-      return;
     }
-    if(msg === "HELLO_SENDER")
-    {
-      console.log("Received a HELLO_SENDER, not forwarding, marking as sender");
-      return;
-    }
-
-    conns.forEach(function(conn)
-    {
-      if(conn != ws)
-      {
-        conn.send(msg);
-      }
-      else
-      {
-        console.log("Not forwarding to self");
-      }
-    });
   });
 });
 

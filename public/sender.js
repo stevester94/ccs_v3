@@ -6,6 +6,7 @@ signaling = new WebSocket('wss://www.ccs.ssmackey.com:443');
 const constraints = {audio: REQUEST_AUDIO, video: REQUEST_VIDEO}; // We don't have video, but we have a mic...
 const configuration = {iceServers: [{urls: 'stun:stun.l.google.com:19302'}]};
 const pc = new RTCPeerConnection(configuration);
+const ICD = share.ICD;
 
 // This hot garbage is just for sanity checking
 sendChannel = pc.createDataChannel("sendChannel");
@@ -30,7 +31,7 @@ function handleSendChannelStatusChange(e)
 }
 
 signaling.onopen = function (event) {
-  signaling.send("HELLO_SENDER");
+  signaling.sendBlob({C2I: ICD.HELLO_SENDER});
 };
 
 // END hot garbage

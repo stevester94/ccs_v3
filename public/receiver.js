@@ -5,9 +5,10 @@ const REQUEST_VIDEO = false;
 const constraints = {audio: true, video: REQUEST_VIDEO}; // We don't have video, but we have a mic...
 const configuration = {iceServers: [{urls: 'stun:stun.l.google.com:19302'}]};
 const pc = new RTCPeerConnection(configuration);
+const ICD = share.ICD;
 
 signaling.onopen = function (event) {
-  signaling.send("HELLO_RECEIVER");
+  signaling.sendBlob({C2I: ICD.HELLO_RECEIVER});
 };
 
 
@@ -58,6 +59,19 @@ pc.ontrack = (event) => {
   console.log("Number possible streams: %s", event.streams.length);
 };
 
+function C2I_handler(C2I)
+{
+  if(C2I === "sender_killed") {
+    console.log("Received C2I that sender was killed");
+    title = document.getElementById("title");
+    title.innerHTML = "Webcam died, reload this page";
+    alert("Webcam died, reload this page");
+  }
+  else {
+    console.log("Unknown C2I received");
+  }
+}
+
 signaling.onmessage = async (event) => {
   console.log("Message received: %s", event.data);
 
@@ -89,15 +103,7 @@ signaling.onmessage = async (event) => {
     } else if (candidate) {
       await pc.addIceCandidate(candidate);
     } else if(C2I) {
-      if(C2I === "sender_killed") {
-        console.log("Received C2I that sender was killed");
-        title = document.getElementById("title");
-        title.innerHTML = "Webcam died, reload this page";
-        alert("Webcam died, reload this page");
-      }
-      else {
-        console.log("Unknown C2I received");
-      }
+      C2I_handler(C2I);
     } else {
       console.log("Unknown message received");
     }
