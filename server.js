@@ -2,10 +2,13 @@
 const PROJECT_ROOT  = "/home/pi/Projects/ccs_v3/";
 const PRIV_KEY_PATH = PROJECT_ROOT+"/secrets/privkey1.pem";
 const CERT_PATH     = PROJECT_ROOT+"/secrets/cert1.pem";
-const DISK_USAGE_ABORT_THRESH = 0.75;
+const DISK_USAGE_ABORT_THRESH = 0.50; // Minimum amount of disk space to keep running
 const DISK_CHECK_PATH = PROJECT_ROOT;
 const BUFFER_FILE_PATH = PROJECT_ROOT+"/output.y4m";
 const PUBLIC_PATH = PROJECT_ROOT+"/public/";
+
+const DEBUG_NO_SPAWN = false;
+
 
 // Websocket server portion
 const WebSocket = require('ws');
@@ -24,6 +27,9 @@ var ffmpeg     = null;
 var cleanup    = null;
 var kill_proc  = null;
 var disk_timer = null;
+
+// We do this to make sure starting with a clean slate
+cleanup   = spawn("rm", [BUFFER_FILE_PATH]);
 
 
 app.use(express.static(PUBLIC_PATH));
@@ -68,26 +74,30 @@ async function check_disk_usage()
 
 function init_sender()
 {
+  if(DEBUG_NO_SPAWN)
+  {
+    return;
+  }
   disk_timer = setInterval(check_disk_usage, 1000); //time is in ms
 
   chromium  = spawn("su" , ["pi", "-c", `xvfb-run chromium-browser -a --use-fake-ui-for-media-stream --use-fake-device-for-media-stream --use-file-for-fake-video-capture='${BUFFER_FILE_PATH}' --allow-file-access https://www.ccs.ssmackey.com/sender.html`]);
 
-  ffmpeg    = spawn("su" , ["pi", "-c", `ffmpeg -f v4l2 -framerate 25 -video_size 640x480 -i /dev/video0 ${BUFFER_FILE_PATH}`]);
+  ffmpeg    = spawn("su" , ["pi", "-c", `ffmpeg -f v4l2 -framerate 10 -video_size 640x480 -i /dev/video0 ${BUFFER_FILE_PATH}`]);
 
   chromium.stdout.on('data', (data) => {
-    console.log(`stdout: ${data}`);
+    console.log(`chromium stdout: ${data}`);
   });
   chromium.stderr.on('data', (data) => {
-    console.error(`stderr: ${data}`);
+    console.error(`chromium stderr: ${data}`);
   });
   chromium.on('close', (code) => {
     console.log(`chromium process exited with code ${code}`);
   });
   ffmpeg.stdout.on('data', (data) => {
-    console.log(`stdout: ${data}`);
+    console.log(`ffmpeg stdout: ${data}`);
   });
   ffmpeg.stderr.on('data', (data) => {
-    console.error(`stderr: ${data}`);
+    console.error(`ffmpeg stderr: ${data}`);
   });
   ffmpeg.on('close', (code) => {
     console.log(`ffmpeg process exited with code ${code}`);
@@ -96,6 +106,11 @@ function init_sender()
 
 function destroy_sender()
 {
+  if(DEBUG_NO_SPAWN)
+  {
+    return;
+  }
+
   clearInterval(disk_timer);
   if(ffmpeg != null && chromium != null)
   {
