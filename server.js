@@ -34,10 +34,13 @@ var ffmpeg     = null;
 var cleanup    = null;
 var kill_proc  = null;
 var disk_timer = null;
+var brightness_adjust = null;
 
 // We do this to make sure starting with a clean slate
 cleanup   = spawn("rm", [BUFFER_FILE_PATH]);
 kill_proc = spawn("killall", ["Xvfb"]);
+brightness_adjust = spawn("su", ["pi", "-c", "v4l2-ctl --set-ctrl brightness=60"]);
+
 
 password = String(fs.readFileSync(PASSWORD_PATH));
 password = password.trim();

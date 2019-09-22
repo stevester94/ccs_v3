@@ -3,3 +3,7 @@ Use "systemctl start ccs" to just run it
 Use "systemctl enable ccs" to enable it on boot
 Use journalctl -u ccs.service to look at logs
 
+VIDEO CONTROL
+v4l2-ctl --set-ctrl brightness=60
+v4l2-ctl --show-ctrls
+
